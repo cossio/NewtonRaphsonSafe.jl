@@ -31,6 +31,8 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 
     #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. =#
 
+    x00, xl0, xh0 = x0, xl, xh # save for logging purposes
+
     @assert !logging # TODO: implement logging
 
     if !(xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0)
@@ -46,7 +48,7 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     end
 
     if !isfinite(xl) || !isfinite(xh)
-        throw(ArgumentError("xl = $xl or xh = $xh is not finite")
+        throw(ArgumentError("xl = $xl or xh = $xh is not finite"))
     end
 
 
@@ -61,11 +63,15 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 
     for iter = 1 : maxiter
         if (((x0 - xh) * df - f) * ((x0 - xl) * df - f) > 0.0) || (abs(2f) > abs(dxold*df))
+            # do bissection
+            #@info "took Bissection" x0 xl xh
             dxold = dx
 			dx = (xh - xl)/2
             x0 = xl + dx
             xl == x0 && return x0     # change in root is negligible
-        else        # Newton step acceptable; take it
+        else        
+            # Newton step acceptable; take it
+            #@info "doing Newton" x0 xl xh
             dxold = dx
 			dx = f / df
 			temp = x0
@@ -73,7 +79,7 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 			temp == x0 && return x0;
         end
         
-        if abs(dx) ≤ xatol || abs(dx) ≤ xrtol * x0   # convergence criterion
+        if abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0)   # convergence criterion
             return x0
         end
         
@@ -89,7 +95,8 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
         end
     end
     
-    @warn "Maximum number of iterations exceeded in rtsafe"
+    @warn "Maximum number of iterations exceeded in rtsafe" x00 xl0 xh0 x0 xl xh
+    
     return x0
 end
 
