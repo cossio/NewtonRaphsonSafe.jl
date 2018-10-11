@@ -2,113 +2,101 @@ export rtsafe
 
 
 """
-Solve F(x) == 0.
+Solve f(x) == 0.
 
-The returned x is such that, if x0 is the actual root, then
+The returned x is such that, if r is the actual root, then:
 
-abs(x0 - x) ≤ max(xatol, xrtol * max(abs(x)))
+    abs(x - r) ≤ max(xatol, xrtol * abs(x))
 
 or
 
-abs(f(x)) ≤ max(fatol, frtol * abs(f(x)))
+    abs(f(x)) ≤ fatol
 
-The function is specified by the arguments F, dF, FdF:
+The function is specified by the argument fdf, which computes
+the objective function and its derivative in a single call, as:
 
-f  = F(x),  f' = dF(x),  (f, f') = FdF(x)
+    f(x), f'(x) = fdf(x)
 
-x1, x2 bracket the root and must satisfy F(x1) ≤ 0 ≤ F(x2) or F(x1) ≤ 0 ≤ F(x2).
+xl, xh bracket the root and must satisfy F(xl) ≤ 0 ≤ F(xh).
+x0 is an initial guess for the root and must satisfy min(xl,xh) ≤ x0 ≤ max(xh,xl).
 """
-function rtsafe(F, dF, FdF, 
-                x1::Real, x2::Real;         # root bracket
+function rtsafe(fdf,                        # compute objective and derivative as f(x), f'(x) = fdf(x)
+                x0::Real,                   # initial root guess
+                xl::Real, xh::Real;         # bracket
                 maxiter::Integer = 100,     # maximum number of iterations
                 xatol::Real = 1e-10,        # absolute tolerance in abscisa
                 xrtol::Real = 1e-10,        # relative tolerance in abscisa
                 fatol::Real = 0,            # absolute tolerance in f(x)
-                frtol::Real = 0             # relative tolerance in f(x)
+                logging::Bool = false       # set to true to log algorithm behavior
                 )
 
     #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. =#
-    if !(xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0 && frtol ≥ 0)
-        throw(ArgumentError("tolerances must be non-negative; got xatol=$xatol, xrtol=$xrtol, fatol=$fatol, frtol=$frtol"))
+
+    @assert !logging # TODO: implement logging
+
+    if !(xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0)
+        throw(ArgumentError("tolerances must be non-negative; got xatol=$xatol, xrtol=$xrtol, fatol=$fatol"))
     end
+
     if maxiter < 0
         throw(ArgumentError("maxiter must be a non-negative integer; got maxiter=$maxiter"))
     end
-    if !isfinite(x1) || !isfinite(x2)
-        throw(ArgumentError("x1, x2 must be finite; got x1=$x1, x2=$x2"))
+
+    if !(xl ≤ x0 ≤ xh) && !(xh ≤ x0 ≤ xl) || !isfinite(x0)
+        throw(ArgumentError("x0 must be finite and ∈ [min(xl,xh), max(xl,xh)]; got x0=$x0, xl=$xl, xh=$xh"))
     end
 
-    fl = F(x1)
-    fh = F(x2)
-
-    if isnan(fl) || isnan(fh)
-        error("F(x1), F(x2) must not be NaN; got F(x1)=$fl, F(x2)=$fh")
+    if !isfinite(xl) || !isfinite(xh)
+        @warn "xl = $xl or xh = $xh is not finite"
     end
 
-    if fl > 0 && fh > 0 || fl < 0 && fh < 0
-        throw(ArgumentError("F(x1) and F(x2) must satisfy F(x1) ≤ 0 ≤ F(x2) or F(x2) ≤ 0 ≤ F(x1); got F(x1)=$fl, F(x2)=$fh"))
-    end
 
-    iszero(fl) && return x1
-    iszero(fh) && return x2
-
-    if fl > 0
-        # Orient the search so that f(x1) < 0
-        xl, xh = x2, x1
-        # fl, fh = fh, fl   # no need for this because we don't use fl,fh below
-    end
-
-    rts = (x1 + x2)/2       # initial root guess
-    dxold = abs(x2 - x1)    # step size before last
+    dxold = abs(xh - xl)    # step size before last
     dx = dxold              # last step size
 
-    f, df = FdF(rts)
+    f, df = fdf(x0)
 
     if isnan(f) || isnan(df)
-        error("f, df must not be NaN; got f=$f, df=$f at x=$rts from FdF")
+        error("f, df must not be NaN; got f=$f, df=$f at x=$x0")
     end
 
     for iter = 1 : maxiter
-        if (((rts - xh) * df - f) * ((rts - xl) * df - f) > 0.0) || (abs(2f) > abs(dxold*df))
+        if (((x0 - xh) * df - f) * ((x0 - xl) * df - f) > 0.0) || (abs(2f) > abs(dxold*df))
+            #println("took bissection")
             dxold = dx
 			dx = (xh - xl)/2
-            rts = xl + dx
-            xl == rts && return rts     # change in root is negligible
+            x0 = xl + dx
+            xl == x0 && return x0     # change in root is negligible
         else        # Newton step acceptable; take it
+            #println("took Newton")
             dxold = dx
 			dx = f / df
-			temp = rts
-			rts -= dx
-			temp == rts && return rts;
+			temp = x0
+			x0 -= dx
+			temp == x0 && return x0;
         end
         
-        if dx ≤ xatol || dx ≤ xrtol * rts   # convergence criterion
-            return rts
+        if abs(dx) ≤ xatol || abs(dx) ≤ xrtol * x0   # convergence criterion
+            return x0
         end
         
-        f, df = FdF(rts)
+        f, df = fdf(x0)
 
-        f ≤ fatol && return rts
+        abs(f) ≤ fatol && return x0
         
         # maintain the bracket
         if f < 0
-            xl = rts
+            xl = x0
         else
-            xh = rts
+            xh = x0
         end
     end
 
     @warn "Maximum number of iterations exceeded in rtsafe"
-    return rts
+    return x0
 end
 
-function rtsafe(f, df, a::Real, b::Real; kwargs...)
-    fdf(x) = (f(x), df(x))
-    rtsafe(f, df, fdf, a, b; kwargs...)
-end
-
-function rtsafe(fdf, a::Real, b::Real; kwargs...)
-    f(x) = first(fdf(x))
-    df(x) = last(fdf(x))
-    rtsafe(f, df, fdf, a, b; kwargs...)
-end
+# function rtsafe(f, df, x0::Real, xl::Real, xh::Real; kwargs...)
+#     fdf(x) = (f(x), df(x))
+#     rtsafe(fdf, x0, xl, xh; kwargs...)
+# end
