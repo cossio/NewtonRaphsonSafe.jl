@@ -64,18 +64,18 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     for iter = 1 : maxiter
         if (((x0 - xh) * df - f) * ((x0 - xl) * df - f) > 0.0) || (abs(2f) > abs(dxold*df))
             # do bissection
-            #@info "took Bissection" x0 xl xh
             dxold = dx
 			dx = (xh - xl)/2
             x0 = xl + dx
+            #@info "did Bissection" x0 xl xh dx
             xl == x0 && return x0     # change in root is negligible
         else        
             # Newton step acceptable; take it
-            #@info "doing Newton" x0 xl xh
             dxold = dx
 			dx = f / df
 			temp = x0
 			x0 -= dx
+            #@info "did Newton" x0 xl xh dx
 			temp == x0 && return x0;
         end
         
