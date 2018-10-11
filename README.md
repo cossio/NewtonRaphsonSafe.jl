@@ -1,7 +1,8 @@
 # NewtonRaphsonSafe Julia Package
 
-[![pipeline status](https://gitlab.com/PhageDisplayInference/NewtonRaphsonSafe.jl/badges/master/pipeline.svg)](https://gitlab.com/PhageDisplayInference/NewtonRaphsonSafe.jl/commits/master)
-[![coverage report](https://gitlab.com/PhageDisplayInference/NewtonRaphsonSafe.jl/badges/master/coverage.svg)](https://gitlab.com/PhageDisplayInference/NewtonRaphsonSafe.jl/commits/master)
+[![Build Status](https://travis-ci.org/cossio/NewtonRaphsonSafe.jl.svg?branch=master)](https://travis-ci.org/cossio/NewtonRaphsonSafe.jl)
+[![Coverage Status](https://coveralls.io/repos/github/cossio/NewtonRaphsonSafe.jl/badge.svg?branch=master)](https://coveralls.io/github/cossio/NewtonRaphsonSafe.jl?branch=master)
+
 
 Uni-dimensional root finding, based on rtsafe routine from the book:
 
