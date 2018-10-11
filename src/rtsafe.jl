@@ -90,8 +90,8 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             xh = x0
         end
     end
-
-    @warn "Maximum number of iterations exceeded in rtsafe"
+    
+    @error "Maximum number of iterations exceeded in rtsafe"
     return x0
 end
 
