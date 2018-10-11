@@ -20,14 +20,13 @@ the objective function and its derivative in a single call, as:
 xl, xh bracket the root and must satisfy F(xl) ≤ 0 ≤ F(xh).
 x0 is an initial guess for the root and must satisfy min(xl,xh) ≤ x0 ≤ max(xh,xl).
 """
-function rtsafe(fdf,                        # compute objective and derivative as f(x), f'(x) = fdf(x)
-                x0::Real,                   # initial root guess
-                xl::Real, xh::Real;         # bracket
-                maxiter::Integer = 100,     # maximum number of iterations
-                xatol::Real = 1e-10,        # absolute tolerance in abscisa
-                xrtol::Real = 1e-10,        # relative tolerance in abscisa
-                fatol::Real = 0,            # absolute tolerance in f(x)
-                logging::Bool = false       # set to true to log algorithm behavior
+function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
+                x0, xl, xh;             # initial root guess and bracket
+                maxiter::Integer = 100, # maximum number of iterations
+                xatol::Real = 1e-10,    # absolute tolerance in abscisa
+                xrtol::Real = 1e-10,    # relative tolerance in abscisa
+                fatol::Real = 0,        # absolute tolerance in f(x)
+                logging::Bool = false   # set to true to log algorithm behavior
                 )
 
     #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. =#
@@ -96,7 +95,7 @@ function rtsafe(fdf,                        # compute objective and derivative a
     return x0
 end
 
-# function rtsafe(f, df, x0::Real, xl::Real, xh::Real; kwargs...)
+# function rtsafe(f, df, x0, xl, xh; kwargs...)
 #     fdf(x) = (f(x), df(x))
 #     rtsafe(fdf, x0, xl, xh; kwargs...)
 # end
