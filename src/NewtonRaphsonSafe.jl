@@ -1,5 +1,5 @@
 module NewtonRaphsonSafe
 
-greet() = print("Hello World!")
+include("rtsafe.jl")
 
 end # module
