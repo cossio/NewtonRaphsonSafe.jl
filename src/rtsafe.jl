@@ -29,7 +29,9 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
                 logging::Bool = false   # set to true to log algorithm behavior
                 )
 
-    #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. =#
+    #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. 
+    At each iteration this routine does the best between a Newton step or a bissection step.
+    Thus it is guaranteed to converge to a root. =#
 
     x00, xl0, xh0 = x0, xl, xh # save for logging purposes
 
@@ -99,8 +101,3 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     
     return x0
 end
-
-# function rtsafe(f, df, x0, xl, xh; kwargs...)
-#     fdf(x) = (f(x), df(x))
-#     rtsafe(fdf, x0, xl, xh; kwargs...)
-# end
