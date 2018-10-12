@@ -2,12 +2,12 @@ using LambertWExp
 
 
 function testrtsafe(fdf, eqn; x0, xl, xh, root)
-    print("solving " * eqn * " from x0 = $x0 ... ")
+    print("solving " * eqn * " from x0 = $x0 (real root = $root) ... ")
     call_count = 0
     F(x) = begin call_count += 1; fdf(x) end
     x = rtsafe(F, x0, xl, xh)
     print("took $call_count function calls\n")
-    @test x ≈ root
+    @test x ≈ root  atol=1e-15
 end
 
 
