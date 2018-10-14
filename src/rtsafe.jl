@@ -26,7 +26,6 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
                 xatol::Real = 1e-10,    # absolute tolerance in abscisa
                 xrtol::Real = 1e-10,    # relative tolerance in abscisa
                 fatol::Real = 0,        # absolute tolerance in f(x)
-                logging::Bool = false   # set to true to log algorithm behavior
                 )
 
     #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. 
@@ -34,8 +33,6 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     Thus it is guaranteed to converge to a root. =#
 
     x00, xl0, xh0 = x0, xl, xh # save for logging purposes
-
-    @assert !logging # TODO: implement logging
 
     if !(xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0)
         throw(ArgumentError("tolerances must be non-negative; got xatol=$xatol, xrtol=$xrtol, fatol=$fatol"))
@@ -71,7 +68,7 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             x0 = xl + dx
             #@info "did Bissection" x0 xl xh dx
             xl == x0 && return x0     # change in root is negligible
-        else        
+        else
             # Newton step acceptable; take it
             dxold = dx
 			dx = f / df
