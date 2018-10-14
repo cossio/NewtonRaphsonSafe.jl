@@ -35,19 +35,21 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     x00, xl0, xh0 = x0, xl, xh # save for logging purposes
 
     if !(xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0)
-        throw(ArgumentError("tolerances must be non-negative; got xatol=$xatol, xrtol=$xrtol, fatol=$fatol"))
+        throw(ArgumentError(string("tolerances must be non-negative; " * 
+                                   "got xatol=",xatol,", xrtol=",xrtol,", fatol=",fatol)))
     end
 
     if maxiter < 0
-        throw(ArgumentError("maxiter must be a non-negative integer; got maxiter=$maxiter"))
+        throw(ArgumentError(string("maxiter must be a non-negative integer; got maxiter=",maxiter)))
     end
 
     if !(xl ≤ x0 ≤ xh) && !(xh ≤ x0 ≤ xl) || !isfinite(x0)
-        throw(ArgumentError("x0 must be finite and ∈ [min(xl,xh), max(xl,xh)]; got x0=$x0, xl=$xl, xh=$xh"))
+        throw(ArgumentError(string("x0 must be finite and ∈ [min(xl,xh), max(xl,xh)]; " *
+                                   "got x0=",x0,", xl=",xl,", xh=",xh)))
     end
 
     if !isfinite(xl) || !isfinite(xh)
-        throw(ArgumentError("xl = $xl or xh = $xh is not finite"))
+        throw(ArgumentError(string("xl=",xl," or xh=",xh," not finite")))
     end
 
 
@@ -67,7 +69,8 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     f, df = fdf(x0)
 
     if isnan(f) || isnan(df)
-        error("f, df must not be NaN; got f=$f, df=$f at x=$x0")
+        @error "fdf NaN" f df x0
+        error()
     end
 
     for iter = 1 : maxiter
@@ -76,7 +79,7 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             dxold = dx
 			dx = (xh - xl)/2
             x0 = xl + dx
-            #@info "did Bissection" x0 xl xh dx
+            @debug "did Bissection" x0 xl xh dx
             xl == x0 && return x0     # change in root is negligible
         else
             # Newton step acceptable; take it
@@ -84,17 +87,21 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 			dx = f / df
 			temp = x0
 			x0 -= dx
-            #@info "did Newton" x0 xl xh dx
+            @debug "did Newton" x0 xl xh dx temp
 			temp == x0 && return x0;
         end
         
         if abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0)   # convergence criterion
+            @debug "rtsafe converged" dx x0 xatol xrtol (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
             return x0
         end
         
         f, df = fdf(x0)
 
-        abs(f) ≤ fatol && return x0
+        if abs(f) ≤ fatol
+            @debug "rtsafe converged" abs(f) ≤ fatol
+            return x0
+        end
         
         # maintain the bracket
         if f < 0
