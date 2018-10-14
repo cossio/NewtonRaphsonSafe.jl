@@ -52,8 +52,18 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 
 
     dxold = abs(xh - xl)    # step size before last
-    dx = dxold              # last step size
+    dx = dxold              # last step sized
 
+    @debug begin
+        flo, _ = fdf(xl)
+        fhi, _ = fdf(xh)
+        if !(flo ≤ 0 ≤ fhi)
+            @error "invalid bracket" flo fhi xl xh
+            error()
+        end
+        "bracket ok"
+    end
+    
     f, df = fdf(x0)
 
     if isnan(f) || isnan(df)

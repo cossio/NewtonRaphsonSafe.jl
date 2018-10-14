@@ -4,3 +4,5 @@
 deps/deps.jl
 
 *.sublime-workspace
+
+test/tests_log.txt
