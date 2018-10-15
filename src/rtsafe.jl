@@ -96,15 +96,18 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             b, fb, dfb = x, f, df
         end
 
+        @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
+
         # convergence criterion
         if abs(f) ≤ fatol || abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0) || x == xold
             @debug "rtsafe converged" x dx a b f df call_count false_count newton_count
-            @debug "rtsafe convergence reason" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
+            @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
             return x
         end
 
     end
     
-    @error "Maximum number of iterations exceeded in rtsafe" x0 a0 b0 x a b f df call_count false_count newton_count
+    @error "Maximum number of iterations exceeded in rtsafe" x0 a0 b0 x a b f df dx fa fb call_count false_count newton_count
+    @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
     return x
 end
