@@ -17,11 +17,13 @@ the objective function and its derivative in a single call, as:
 
     f(x), f'(x) = fdf(x)
 
-xl, xh bracket the root and must satisfy F(xl) ≤ 0 ≤ F(xh).
-x0 is an initial guess for the root and must satisfy min(xl,xh) ≤ x0 ≤ max(xh,xl).
+(a0,b0) bracket the root and must satisfy F(a0) * F(b0) ≤ 0.
+x0 is an initial guess for the root and must satisfy
+    
+    x0 ∈ [a0, b0]
 """
 function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
-                x0, xl, xh;             # initial root guess and bracket
+                x0, a0, b0;             # initial root guess and bracket
                 maxiter::Integer = 100, # maximum number of iterations
                 xatol::Real = 1e-10,    # absolute tolerance in abscisa
                 xrtol::Real = 1e-10,    # relative tolerance in abscisa
@@ -29,89 +31,80 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
                 )
 
     #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. 
-    At each iteration this routine does the best between a Newton step or a bissection step.
-    Thus it is guaranteed to converge to a root. =#
+    We use false position instead of bissection. At each iteration this routine does the best 
+    between a Newton step or a false position step. Thus it is guaranteed to converge to a root. =#
 
-    x00, xl0, xh0 = x0, xl, xh # save for logging purposes
+    @assert xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0
+    @assert maxiter ≥ 0
+    @assert a0 ≤ x0 ≤ b0 || b0 ≤ x0 ≤ a0
+    @assert isfinite(x0) && isfinite(a0) && isfinite(b0)
 
-    if !(xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0)
-        throw(ArgumentError(string("tolerances must be non-negative; " * 
-                                   "got xatol=",xatol,", xrtol=",xrtol,", fatol=",fatol)))
+    a, b = a0, b0               # current bracket
+    x  = xold  = x0             # current and last guess
+    dx = dxold = abs(b - a)     # last step size and before last
+
+
+    call_count = 0  # counts number of fdf calls
+    F(x) = begin 
+        call_count += 1
+        f, df = fdf(x)
+        @assert !isnan(f) && !isnan(df)
+        f, df
     end
 
-    if maxiter < 0
-        throw(ArgumentError(string("maxiter must be a non-negative integer; got maxiter=",maxiter)))
+    f, df = F(x)
+    fa, dfa = F(a)
+    fb, dfb = F(b)
+
+    # bracket condition
+    @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
+
+    # make sure f(a) ≤ 0
+    if fa > 0
+        a, b = b, a
+        fa, fb = fb, fa
+        dfa, dfb = dfb, dfa
     end
 
-    if !(xl ≤ x0 ≤ xh) && !(xh ≤ x0 ≤ xl) || !isfinite(x0)
-        throw(ArgumentError(string("x0 must be finite and ∈ [min(xl,xh), max(xl,xh)]; " *
-                                   "got x0=",x0,", xl=",xl,", xh=",xh)))
-    end
-
-    if !isfinite(xl) || !isfinite(xh)
-        throw(ArgumentError(string("xl=",xl," or xh=",xh," not finite")))
-    end
-
-
-    dxold = abs(xh - xl)    # step size before last
-    dx = dxold              # last step sized
-
-    @debug begin
-        flo, _ = fdf(xl)
-        fhi, _ = fdf(xh)
-        if !(flo ≤ 0 ≤ fhi)
-            @error "invalid bracket" flo fhi xl xh
-            error()
-        end
-        "bracket ok"
-    end
-    
-    f, df = fdf(x0)
-
-    if isnan(f) || isnan(df)
-        @error "fdf NaN" f df x0
-        error()
-    end
+    false_count = newton_count = 0
 
     for iter = 1 : maxiter
-        if (((x0 - xh) * df - f) * ((x0 - xl) * df - f) > 0.0) || (abs(2f) > abs(dxold*df))
-            # do bissection
-            dxold = dx
-			dx = (xh - xl)/2
-            x0 = xl + dx
-            @debug "did Bissection" x0 xl xh dx
-            xl == x0 && return x0     # change in root is negligible
-        else
-            # Newton step acceptable; take it
-            dxold = dx
-			dx = f / df
-			temp = x0
-			x0 -= dx
-            @debug "did Newton" x0 xl xh dx temp
-			temp == x0 && return x0;
-        end
-        
-        if abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0)   # convergence criterion
-            @debug "rtsafe converged" dx x0 xatol xrtol (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
-            return x0
-        end
-        
-        f, df = fdf(x0)
+        xold  = x
+        dxold = dx
 
-        if abs(f) ≤ fatol
-            @debug "rtsafe converged" abs(f) ≤ fatol
-            return x0
-        end
-        
-        # maintain the bracket
-        if f < 0
-            xl = x0
+        newtondx = f / df
+        newtonx = x - newtondx
+
+        if a ≤ newtonx ≤ b && abs(2f) ≤ abs(dxold * df)
+            # newton step good to go
+            x  = newtonx
+            dx = newtondx
+            newton_count += 1
         else
-            xh = x0
+            # do false position
+            x  = a + (b - a) * fa / (fa - fb)
+            dx = (b - a) / 2
+            false_count += 1
         end
+
+        f, df = F(x)
+
+        # maintain bracket
+        if f < 0
+            a = x
+        else
+            b = x
+        end
+
+        # convergence criterion
+        if abs(f) ≤ fatol || abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0) || x == xold
+            @debug "rtsafe converged" x dx a b f df call_count false_count newton_count
+            @debug "rtsafe convergence reason" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
+            return x
+        end
+
     end
     
-    @error "Maximum number of iterations exceeded in rtsafe" x00 xl0 xh0 x0 xl xh
-    
-    return x0
+    @error "Maximum number of iterations exceeded in rtsafe" x0 a0 b0 x a b f df call_count false_count newton_count
+    return x
 end

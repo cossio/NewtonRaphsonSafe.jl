@@ -1,7 +1,6 @@
 using Test, NewtonRaphsonSafe, Logging
 
-const _LOGGER = ConsoleLogger(stderr, Logging.Debug)
-global_logger(_LOGGER)
+global_logger(ConsoleLogger(stderr, Logging.Debug))
 
 include("rtsafe.jl")
 include("rtnewton.jl")
