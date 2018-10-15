@@ -91,9 +91,9 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 
         # maintain bracket
         if f < 0
-            a = x
+            a, fa, dfa = x, f, df
         else
-            b = x
+            b, fb, dfb = x, f, df
         end
 
         # convergence criterion
