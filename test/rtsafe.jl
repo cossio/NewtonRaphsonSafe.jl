@@ -20,5 +20,4 @@ end
 
     fdf(x) = (sin(x), cos(x))
     testrtsafe(fdf, "sin(x) = 0"; x0=-1., xl=-1.5, xh=1., root=0)
-
 end

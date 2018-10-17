@@ -77,26 +77,18 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
 
         if a ≤ newtonx ≤ b && abs(2f) ≤ abs(dxold * df)
             # newton step good to go
+            newton_count += 1
             x  = newtonx
             dx = newtondx
-            newton_count += 1
         else
             # do false position
-            x  = a + (b - a) * fa / (fa - fb)
-            dx = (b - a) / 2
             false_count += 1
+            x = a + (b-a)*fa/(fa-fb)
+            @assert a ≤ x ≤ b
+            dx = max(b-x, x-a)
         end
 
         f, df = F(x)
-
-        # maintain bracket
-        if f < 0
-            a, fa, dfa = x, f, df
-        else
-            b, fb, dfb = x, f, df
-        end
-
-        @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
 
         # convergence criterion
         if abs(f) ≤ fatol || abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0) || x == xold
@@ -105,9 +97,17 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             return x
         end
 
+        # update bracket
+        if f < 0
+            a, fa, dfa = x, f, df
+        else
+            b, fb, dfb = x, f, df
+        end
+
+        @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
     end
     
-    @error "Maximum number of iterations exceeded in rtsafe" x0 a0 b0 x a b f df dx fa fb call_count false_count newton_count
+    @error "Maximum number of iterations exceeded in rtsafe without convergence" x0 a0 b0 x a b f df dx fa fb call_count false_count newton_count
     @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
     return x
 end
