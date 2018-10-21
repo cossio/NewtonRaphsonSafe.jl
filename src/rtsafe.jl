@@ -39,9 +39,9 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     @assert a0 ≤ x0 ≤ b0 || b0 ≤ x0 ≤ a0
     @assert isfinite(x0) && isfinite(a0) && isfinite(b0)
 
-    a, b = a0, b0               # current bracket
-    x  = xold  = x0             # current and last guess
-    dx = dxold = abs(b - a)     # last step size and before last
+    a, b = minmax(a0, b0)   # current bracket
+    x  = x0                 # current and last guess
+    dx = abs(b - a)         # last step size and before last
 
 
     call_count = 0  # counts number of fdf calls
@@ -57,20 +57,19 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     fb, dfb = F(b)
 
     # bracket condition
+    if !(fa ≤ 0 ≤ fb) && !(fb ≤ 0 ≤ fa)
+        @error "bracket failure" fa fb a b
+    end
     @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
 
-    # make sure f(a) ≤ 0
-    if fa > 0
-        a, b = b, a
-        fa, fb = fb, fa
-        dfa, dfb = dfb, dfa
-    end
-
-    false_count = newton_count = 0
+    bissect_count = newton_count = 0
 
     for iter = 1 : maxiter
         xold  = x
         dxold = dx
+
+        #= new root guess, either by Newton, 
+        or False Position =#
 
         newtondx = f / df
         newtonx = x - newtondx
@@ -79,35 +78,48 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             # newton step good to go
             newton_count += 1
             x  = newtonx
-            dx = newtondx
+            dx = abs(newtondx)
         else
             # do false position
-            false_count += 1
-            x = a + (b-a)*fa/(fa-fb)
-            @assert a ≤ x ≤ b
-            dx = max(b-x, x-a)
+            bissect_count += 1
+            # x = a + (b-a)*fa/(fa-fb)
+            # dx = max(b - x, x - a)
+
+            # do bissection (seems faster than false position)
+            #@info "bissection"
+            dx = 0.5 * (b - a)
+            x = a + dx
         end
+
+        @assert a ≤ x ≤ b
+        @assert dx ≥ 0
 
         f, df = F(x)
 
         # convergence criterion
-        if abs(f) ≤ fatol || abs(dx) ≤ xatol || abs(dx) ≤ xrtol * abs(x0) || x == xold
-            @debug "rtsafe converged" x dx a b f df call_count false_count newton_count
-            @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
+        if abs(f) ≤ fatol || dx ≤ xatol || dx ≤ xrtol * abs(x)
+            @debug "rtsafe converged" x xold dx a b f df call_count bissect_count newton_count
+            @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (dx ≤ xatol) (dx ≤ xrtol * abs(x)) iter maxiter
+            return x
+        elseif x == xold
+            @warn "convergence criteria cannot be met" x dx a b f df call_count bissect_count newton_count
             return x
         end
 
         # update bracket
-        if f < 0
+        if sign(f) == sign(fa)
             a, fa, dfa = x, f, df
-        else
+        elseif sign(f) == sign(fb)
             b, fb, dfb = x, f, df
+        else
+            error()
         end
 
+        @assert a ≤ b
         @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
     end
     
-    @error "Maximum number of iterations exceeded in rtsafe without convergence" x0 a0 b0 x a b f df dx fa fb call_count false_count newton_count
-    @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (abs(dx) ≤ xatol) (abs(dx) ≤ xrtol * abs(x0))
+    @error "Maximum number of iterations exceeded in rtsafe without convergence" x0 a0 b0 x a b f df dx fa fb call_count bissect_count newton_count
+    @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (dx ≤ xatol) (dx ≤ xrtol * abs(x)) iter maxiter
     return x
 end

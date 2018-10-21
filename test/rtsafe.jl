@@ -13,6 +13,16 @@ end
     testrtsafe(fdf, "lambertwexp(x) = 1"; x0=5, xl=-10, xh=10, root=1)
 
     fdf(x) = begin W = lambertwexp(x); (W - 1, W / (1 + W)) end
+    testrtsafe(fdf, "lambertwexp(x) = 1"; x0=5, xl=10, xh=-10, root=1)
+
+    fdf(x) = begin W = lambertwexp(-x); (W - 1, -W / (1 + W)) end
+    testrtsafe(fdf, "lambertwexp(-x) = 1"; x0=5, xl=-10, xh=10, root=-1)
+
+    fdf(x) = begin W = lambertwexp(-x); (W - 1, -W / (1 + W)) end
+    testrtsafe(fdf, "lambertwexp(-x) = 1"; x0=5, xl=10, xh=-10, root=-1)
+
+    
+    fdf(x) = begin W = lambertwexp(x); (W - 1, W / (1 + W)) end
     testrtsafe(fdf, "lambertwexp(x) = 1"; x0=-5, xl=-10, xh=10, root=1)
 
     fdf(x) = (sin(x), cos(x))
