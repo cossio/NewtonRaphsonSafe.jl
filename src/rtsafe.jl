@@ -89,6 +89,11 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             #@info "bissection"
             dx = 0.5 * (b - a)
             x = a + dx
+
+            if x == a
+                @warn "convergence criteria cannot be met" x dx a b f df call_count bissect_count newton_count
+                return x
+            end
         end
 
         @assert a ≤ x ≤ b
@@ -100,9 +105,6 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
         if abs(f) ≤ fatol || dx ≤ xatol || dx ≤ xrtol * abs(x)
             @debug "rtsafe converged" x xold dx a b f df call_count bissect_count newton_count
             @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (dx ≤ xatol) (dx ≤ xrtol * abs(x)) iter maxiter
-            return x
-        elseif x == xold
-            @warn "convergence criteria cannot be met" x dx a b f df call_count bissect_count newton_count
             return x
         end
 
