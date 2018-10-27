@@ -21,6 +21,13 @@ the objective function and its derivative in a single call, as:
 x0 is an initial guess for the root and must satisfy
     
     x0 ∈ [a0, b0]
+
+Examples:
+
+    rtsafe(fdf, x0, a0, b0;
+           maxiter = 100, 
+           xatol = 1e-10, xrtol = 1e-10,
+           fatol = 0)
 """
 function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
                 x0, a0, b0;             # initial root guess and bracket
