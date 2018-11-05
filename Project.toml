@@ -3,8 +3,6 @@ uuid = "495da384-cce8-11e8-2346-8f8bc5e73716"
 authors = ["Jorge Fernandez-de-Cossio-Diaz <j.cossio.diaz@gmail.com>"]
 version = "0.0.0"
 
-[deps]
-
 [extras]
 LambertWExp = "800b0394-cc3a-11e8-1760-5d40f07d798a"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
