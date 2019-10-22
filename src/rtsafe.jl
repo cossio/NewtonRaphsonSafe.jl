@@ -2,6 +2,9 @@ export rtsafe
 
 
 """
+    rtsafe(fdf, x0, a0, b0;
+           [maxiter, xatol, xrtol, fatol])
+
 Solve f(x) == 0.
 
 The returned x is such that, if r is the actual root, then:
@@ -19,15 +22,8 @@ the objective function and its derivative in a single call, as:
 
 (a0,b0) bracket the root and must satisfy F(a0) * F(b0) ≤ 0.
 x0 is an initial guess for the root and must satisfy
-    
+
     x0 ∈ [a0, b0]
-
-Examples:
-
-    rtsafe(fdf, x0, a0, b0;
-           maxiter = 100, 
-           xatol = 1e-10, xrtol = 1e-10,
-           fatol = 0)
 """
 function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
                 x0, a0, b0;             # initial root guess and bracket
@@ -37,8 +33,8 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
                 fatol::Real = 0,        # absolute tolerance in f(x)
                 )
 
-    #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition. 
-    We use false position instead of bissection. At each iteration this routine does the best 
+    #= Based on rtsafe, from Press, William H., et al. 2007. Numerical Recipes. 3rd edition.
+    We use false position instead of bissection. At each iteration this routine does the best
     between a Newton step or a false position step. Thus it is guaranteed to converge to a root. =#
 
     @assert xatol ≥ 0 && xrtol ≥ 0 && fatol ≥ 0
@@ -50,9 +46,8 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     x  = x0                 # current and last guess
     dx = abs(b - a)         # last step size and before last
 
-
     call_count = 0  # counts number of fdf calls
-    F(x) = begin 
+    F(x) = begin
         call_count += 1
         f, df = fdf(x)
         @assert !isnan(f) && !isnan(df)
@@ -64,9 +59,6 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
     fb, dfb = F(b)
 
     # bracket condition
-    if !(fa ≤ 0 ≤ fb) && !(fb ≤ 0 ≤ fa)
-        @error "bracket failure" fa fb a b
-    end
     @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
 
     bissect_count = newton_count = 0
@@ -75,7 +67,7 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
         xold  = x
         dxold = dx
 
-        #= new root guess, either by Newton, 
+        #= new root guess, either by Newton,
         or False Position =#
 
         newtondx = f / df
@@ -87,8 +79,9 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
             x  = newtonx
             dx = abs(newtondx)
         else
-            # do false position
             bissect_count += 1
+
+            # do false position
             # x = a + (b-a)*fa/(fa-fb)
             # dx = max(b - x, x - a)
 
@@ -127,7 +120,7 @@ function rtsafe(fdf,                    # f(x), f'(x) = fdf(x)
         @assert a ≤ b
         @assert fa ≤ 0 ≤ fb || fb ≤ 0 ≤ fa
     end
-    
+
     @error "Maximum number of iterations exceeded in rtsafe without convergence" x0 a0 b0 x a b f df dx fa fb call_count bissect_count newton_count
     @debug "rtsafe convergence criteria" xatol xrtol fatol (abs(f) ≤ fatol) (dx ≤ xatol) (dx ≤ xrtol * abs(x)) iter maxiter
     return x
