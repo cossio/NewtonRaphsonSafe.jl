@@ -1,0 +1,5 @@
+[deps]
+LambertWExp = "800b0394-cc3a-11e8-1760-5d40f07d798a"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+NewtonRaphsonSafe = "495da384-cce8-11e8-2346-8f8bc5e73716"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
